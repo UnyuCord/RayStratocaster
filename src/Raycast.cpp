@@ -166,7 +166,12 @@ int main(int argc, char *argv[]) {
         break;
       }
 
-      // TODO: Darker edges
+      
+      if (side) {
+        color.r /= 2;
+        color.g /= 2;
+        color.b /= 2;
+      }
 
       SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
       SDL_RenderLine(renderer, static_cast<float>(x),

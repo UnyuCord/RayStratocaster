@@ -1,4 +1,3 @@
-
 #include "Raycast.h"
 #include "SDL3/SDL_error.h"
 #include "SDL3/SDL_init.h"
@@ -7,7 +6,6 @@
 #include "World.h"
 #include <SDL3/SDL_main.h>
 #include <stdexcept>
-#include <stdio.h>
 
 bool checkForQuitSignal() {
   if (SDL_Event event; SDL_PollEvent(&event) && event.type == SDL_EVENT_QUIT) {
@@ -31,7 +29,8 @@ int main(int argc, char *argv[]) {
   }
 
   // TODO: Also proper SDL error handling
-  if (!SDL_CreateWindowAndRenderer("RayStratocaster", raycaster.SCREEN_WIDTH, raycaster.SCREEN_HEIGHT, 0, &window,
+  if (!SDL_CreateWindowAndRenderer("RayStratocaster", raycaster.SCREEN_WIDTH,
+                                   raycaster.SCREEN_HEIGHT, 0, &window,
                                    &renderer)) {
     throw std::runtime_error(SDL_GetError());
   }
@@ -39,11 +38,9 @@ int main(int argc, char *argv[]) {
   // TODO: Make this an option
   SDL_SetRenderVSync(renderer, 1);
 
-  world.player.position = {22, 12};
-
-
   while (!done) {
     raycaster.render(world, *renderer);
+    world.updateWorld();
     done = checkForQuitSignal();
   }
   return 0;

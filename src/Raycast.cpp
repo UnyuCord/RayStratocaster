@@ -1,6 +1,6 @@
 #include "Raycast.h"
+#include "SDL3/SDL_render.h"
 #include <SDL3/SDL.h>
-#include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
 
@@ -8,10 +8,10 @@
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
 void RayStratocaster::render(const World &world, SDL_Renderer &renderer) {
-  
-  const auto &position = world.player.position;
-  const auto &direction = world.player.direction;
-  const auto &plane = world.player.plane;
+
+  const auto &position = world.getPlayer().position;
+  const auto &direction = world.getPlayer().direction;
+  const auto &plane = world.getPlayer().plane;
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
 
@@ -115,16 +115,16 @@ void RayStratocaster::render(const World &world, SDL_Renderer &renderer) {
     COLOR_RESET
   }
 
-  oldFrameTime = frameTime;
-  frameTime = SDL_GetTicks();
-
-  double deltaTime = static_cast<double>(frameTime - oldFrameTime) / 1000.0;
-
   SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",
-                                 1.0 / deltaTime)) {
+                                 1.0 / world.getDeltaTime())) {
     throw std::runtime_error(SDL_GetError());
   }
+
+  SDL_RenderDebugTextFormat(&renderer, 50, 60, "Player POS: x:%.2f y:%.2f", position.x, position.y);
+  SDL_RenderDebugTextFormat(&renderer, 50, 70, "Player DIR: x:%.2f y:%.2f", direction.x, direction.y);
+  SDL_RenderDebugTextFormat(&renderer, 50, 80, "Player PLN: x:%.2f y:%.2f", plane.x, plane.y);
+
   SDL_RenderPresent(&renderer);
   COLOR_RESET
 

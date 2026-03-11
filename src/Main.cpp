@@ -21,8 +21,11 @@ int main(int argc, char *argv[]) {
 
   RayStratocaster raycaster;
 
-  SDL_Window *window;
+  SDL_Window *raycastWindow;
   SDL_Renderer *renderer;
+
+  SDL_Window *twoDimensionalViewWindow;
+  SDL_Renderer *twoDimensionalViewRenderer;
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     throw std::runtime_error(SDL_GetError());
@@ -30,16 +33,25 @@ int main(int argc, char *argv[]) {
 
   // TODO: Also proper SDL error handling
   if (!SDL_CreateWindowAndRenderer("RayStratocaster", raycaster.SCREEN_WIDTH,
-                                   raycaster.SCREEN_HEIGHT, 0, &window,
+                                   raycaster.SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE, &raycastWindow,
                                    &renderer)) {
     throw std::runtime_error(SDL_GetError());
   }
 
+  if (!SDL_CreateWindowAndRenderer("RayStratocaster 2D Viewa", raycaster.SCREEN_WIDTH,
+                                   raycaster.SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE, &twoDimensionalViewWindow,
+                                   &twoDimensionalViewRenderer)) {
+    throw std::runtime_error(SDL_GetError());
+  }
+  
   // TODO: Make this an option
   SDL_SetRenderVSync(renderer, 1);
+  SDL_SetRenderVSync(twoDimensionalViewRenderer, 1);
 
   while (!done) {
     raycaster.render(world, *renderer);
+    // TODO: Make this view overlay with the raycast view when pressing a button i.e dont render in a seperate window
+    raycaster.renderTwoDimensionalView(world, *twoDimensionalViewRenderer);
     world.updateWorld();
     done = checkForQuitSignal();
   }

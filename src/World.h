@@ -2,6 +2,7 @@
 
 #include "Player.h"
 #include "PlayerController.h"
+#include "TextureAtlas.h"
 
 constexpr int MAP_WIDTH = 24;
 constexpr int MAP_HEIGHT = 24;
@@ -18,6 +19,8 @@ public:
   Player &getPlayer();
   const Player &getPlayer() const;
   void updateWorld(double deltaTime);
+
+  const TextureAtlas textureAtlas = {"resources/textures/tex.png", 128, 128};
 
   // TODO: It is EXTREMELY stupid to hard code the map size to 24, but right now
   // I cant be bothered to make it better, ill regret this later...

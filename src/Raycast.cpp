@@ -1,21 +1,31 @@
 #include "Raycast.h"
 #include "SDL3/SDL_pixels.h"
-#include "SDL3/SDL_rect.h"
 #include "SDL3/SDL_render.h"
+#include "SDL3/SDL_stdinc.h"
 #include "World.h"
 #include <SDL3/SDL.h>
-#include <cstdio>
-#include <cstdlib>
+#include <cmath>
 #include <stdexcept>
 
 // TODO: Renderline function that accepts color
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
-void RayStratocaster::renderPlayerView(const World &world, SDL_Renderer &renderer) {
+// Thanks https://aquilarius.itch.io/aquilariusrt for the textures :)
+// Relegate this to a texture loader of some kind, coupled to world / future map
+// class? textures part of map?
+
+using namespace std;
+
+void RayStratocaster::renderPlayerView(const World &world,
+                                       SDL_Renderer &renderer,
+                                       SDL_Texture &texture) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
   const auto &plane = world.getPlayer().plane;
+  const auto &textureAtlas = world.textureAtlas;
+
+  Uint32 screenBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
 
@@ -27,8 +37,7 @@ void RayStratocaster::renderPlayerView(const World &world, SDL_Renderer &rendere
     auto mapY = static_cast<int>(position.y);
 
     Vector2D<double> sideDistance;
-    Vector2D deltaDistance = {std::abs(1 / rayDirection.x),
-                              std::abs(1 / rayDirection.y)};
+    Vector2D deltaDistance = {abs(1 / rayDirection.x), abs(1 / rayDirection.y)};
 
     double perpendicularWallDistance;
 
@@ -85,44 +94,53 @@ void RayStratocaster::renderPlayerView(const World &world, SDL_Renderer &rendere
     if (drawEnd >= SCREEN_HEIGHT)
       drawEnd = SCREEN_HEIGHT - 1;
 
-    SDL_Color color;
+    int texIndex = world.MAP[mapX][mapY] - 1;
 
-    // TODO: Use textures instead
-    switch (world.MAP[mapX][mapY]) {
-    case 1:
-      color = {255, 0, 0, 255};
-      break;
-    case 2:
-      color = {0, 255, 0, 255};
-      break;
-    case 3:
-      color = {0, 0, 255, 255};
-      break;
-    case 4:
-      color = {255, 255, 255, 255};
-      break;
-    default:
-      color = {0, 255, 255, 255};
-      break;
+    int tileX = texIndex % textureAtlas.tilesPerRow;
+    int tileY = texIndex / textureAtlas.tilesPerRow;
+
+    double wallX;
+
+    if (!side) {
+      wallX = position.y + perpendicularWallDistance * rayDirection.y;
+    } else {
+      wallX = position.x + perpendicularWallDistance * rayDirection.x;
     }
+    wallX -= floor(wallX);
 
-    if (side) {
-      color.r /= 2;
-      color.g /= 2;
-      color.b /= 2;
+    auto texX = int(wallX * double(textureAtlas.tileWidth));
+
+    if (side == 0 && rayDirection.x > 0)
+      texX = textureAtlas.tileWidth - texX - 1;
+    if (side == 1 && rayDirection.y < 0)
+      texX = textureAtlas.tileWidth - texX - 1;
+
+    double step = 1.0 * textureAtlas.tileHeight / lineHeight;
+    double texPos =
+        (drawStart - (double)SCREEN_HEIGHT / 2 + (double)lineHeight / 2) * step;
+
+    for (int y = drawStart; y < drawEnd; y++) {
+      int texY = (int)texPos % textureAtlas.tileHeight;
+      texPos += step;
+
+      int atlasX = textureAtlas.tileWidth * tileX + texX;
+      int atlasY = textureAtlas.tileHeight * tileY + texY;
+
+      Uint32 color =
+          textureAtlas.pixels[(atlasY * textureAtlas.pitch / 4) + atlasX];
+
+      screenBuffer[y * SCREEN_WIDTH + x] = color;
     }
-
-    SDL_SetRenderDrawColor(&renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderLine(&renderer, static_cast<float>(x),
-                   static_cast<float>(drawStart), static_cast<float>(x),
-                   static_cast<float>(drawEnd));
-    COLOR_RESET
   }
 
+  SDL_UpdateTexture(&texture, nullptr, screenBuffer,
+                    SCREEN_WIDTH * sizeof(Uint32));
+  SDL_RenderTexture(&renderer, &texture, nullptr, nullptr);
+  
   SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",
                                  1.0 / world.getDeltaTime())) {
-    throw std::runtime_error(SDL_GetError());
+    throw runtime_error(SDL_GetError());
   }
 
   SDL_RenderDebugTextFormat(&renderer, 50, 60, "Player POS: x:%.2f y:%.2f",
@@ -132,13 +150,19 @@ void RayStratocaster::renderPlayerView(const World &world, SDL_Renderer &rendere
   SDL_RenderDebugTextFormat(&renderer, 50, 80, "Player PLN: x:%.2f y:%.2f",
                             plane.x, plane.y);
 
-  SDL_RenderPresent(&renderer);
   COLOR_RESET
 
+  // TODO: Remove this once floor and ceiling rendering works
+  for (int z = 0; z < SCREEN_HEIGHT * SCREEN_WIDTH; z++)
+    screenBuffer[z] = 0;
+
+  SDL_RenderPresent(&renderer);
   SDL_RenderClear(&renderer);
 };
 
-// TODO: Need to refactor this badly, but it does work at least, if a little skewed at certain values...
+// TODO: Need to refactor this badly, but it does work at least, if a little
+// skewed at certain values...
+// ALSO seemingly inverted??
 void RayStratocaster::renderTwoDimensionalView(const World &world,
                                                SDL_Renderer &renderer) {
 
@@ -158,7 +182,8 @@ void RayStratocaster::renderTwoDimensionalView(const World &world,
   playerRect.x = float(position.x) * squareWidthScaledToResolution;
   playerRect.y = float(position.y) * squareHeightScaledToResolution;
 
-  // doing this just so it kind of matches the "collision" with walls until i have actual collision boxes
+  // doing this just so it kind of matches the "collision" with walls until i
+  // have actual collision boxes
   playerRect.x -= playerRect.w / 2;
   playerRect.y -= playerRect.h / 2;
 

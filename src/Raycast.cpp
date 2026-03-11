@@ -10,10 +10,6 @@
 // TODO: Renderline function that accepts color
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
-// Thanks https://aquilarius.itch.io/aquilariusrt for the textures :)
-// Relegate this to a texture loader of some kind, coupled to world / future map
-// class? textures part of map?
-
 using namespace std;
 
 void RayStratocaster::renderPlayerView(const World &world,
@@ -120,7 +116,7 @@ void RayStratocaster::renderPlayerView(const World &world,
         (drawStart - (double)SCREEN_HEIGHT / 2 + (double)lineHeight / 2) * step;
 
     for (int y = drawStart; y < drawEnd; y++) {
-      int texY = (int)texPos % textureAtlas.tileHeight;
+      int texY = (int)texPos & (textureAtlas.tileHeight - 1);
       texPos += step;
 
       int atlasX = textureAtlas.tileWidth * tileX + texX;
@@ -128,6 +124,8 @@ void RayStratocaster::renderPlayerView(const World &world,
 
       Uint32 color =
           textureAtlas.pixels[(atlasY * textureAtlas.pitch / 4) + atlasX];
+
+      if(side == 1) color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
 
       screenBuffer[y * SCREEN_WIDTH + x] = color;
     }

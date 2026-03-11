@@ -10,9 +10,9 @@ class RayStratocaster {
   Uint64 oldFrameTime = 0Lu;
 
 public:
-  // TODO: Variable screen size
-  const int SCREEN_WIDTH = 640;
-  const int SCREEN_HEIGHT = 480;
+  // TODO: Variable screen size and also Renderer shouldnt be owner of these
+  const int SCREEN_WIDTH = 1280;
+  const int SCREEN_HEIGHT = 720;
 
   void render(const World &world, SDL_Renderer &renderer);
   RayStratocaster() = default;

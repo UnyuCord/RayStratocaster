@@ -21,6 +21,9 @@ void RayStratocaster::renderPlayerView(const World &world,
   const auto &plane = world.getPlayer().plane;
   const auto &textureAtlas = world.textureAtlas;
 
+  // TODO: Make this a slider adjustable option
+  const auto MAX_VIEW_DISTANCE = 20.0;
+
   Uint32 screenBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
@@ -40,7 +43,7 @@ void RayStratocaster::renderPlayerView(const World &world,
     int stepX;
     int stepY;
 
-    auto hit = false;
+    auto rayHasHitWall = false;
     int side;
 
     if (rayDirection.x < 0) {
@@ -59,7 +62,7 @@ void RayStratocaster::renderPlayerView(const World &world,
       sideDistance.y = (mapY + 1.0 - position.y) * deltaDistance.y;
     }
 
-    while (!hit) {
+    while (!rayHasHitWall) {
 
       if (sideDistance.x < sideDistance.y) {
         sideDistance.x += deltaDistance.x;
@@ -71,9 +74,21 @@ void RayStratocaster::renderPlayerView(const World &world,
         side = 1;
       }
 
+      if (double currentDistance = (side == 0)
+                                       ? sideDistance.x - deltaDistance.x
+                                       : sideDistance.y - deltaDistance.y;
+          currentDistance > MAX_VIEW_DISTANCE)
+        break;
+
+      if (mapX < 0 || mapY < 0 || mapX >= MAP_WIDTH || mapY >= MAP_HEIGHT)
+        break;
+
       if (world.MAP[mapX][mapY] > 0)
-        hit = true;
+        rayHasHitWall = true;
     }
+
+    if (!rayHasHitWall)
+      continue;
 
     if (side == 0)
       perpendicularWallDistance = sideDistance.x - deltaDistance.x;
@@ -125,7 +140,8 @@ void RayStratocaster::renderPlayerView(const World &world,
       Uint32 color =
           textureAtlas.pixels[(atlasY * textureAtlas.pitch / 4) + atlasX];
 
-      if(side == 1) color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
+      if (side == 1)
+        color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
 
       screenBuffer[y * SCREEN_WIDTH + x] = color;
     }
@@ -134,7 +150,7 @@ void RayStratocaster::renderPlayerView(const World &world,
   SDL_UpdateTexture(&texture, nullptr, screenBuffer,
                     SCREEN_WIDTH * sizeof(Uint32));
   SDL_RenderTexture(&renderer, &texture, nullptr, nullptr);
-  
+
   SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",
                                  1.0 / world.getDeltaTime())) {

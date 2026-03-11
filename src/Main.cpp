@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   SDL_SetRenderVSync(twoDimensionalViewRenderer, 1);
 
   while (!done) {
-    raycaster.render(world, *renderer);
+    raycaster.renderPlayerView(world, *renderer);
     // TODO: Make this view overlay with the raycast view when pressing a button i.e dont render in a seperate window
     raycaster.renderTwoDimensionalView(world, *twoDimensionalViewRenderer);
     world.updateWorld();

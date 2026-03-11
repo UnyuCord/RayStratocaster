@@ -14,7 +14,7 @@ public:
   const int SCREEN_WIDTH = 1280;
   const int SCREEN_HEIGHT = 720;
 
-  void render(const World &world, SDL_Renderer &renderer);
+  void renderPlayerView(const World &world, SDL_Renderer &renderer);
   void renderTwoDimensionalView(const World &world, SDL_Renderer &renderer);
   RayStratocaster() = default;
 };

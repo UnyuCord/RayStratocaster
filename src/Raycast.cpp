@@ -11,7 +11,7 @@
 // TODO: Renderline function that accepts color
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
-void RayStratocaster::render(const World &world, SDL_Renderer &renderer) {
+void RayStratocaster::renderPlayerView(const World &world, SDL_Renderer &renderer) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;

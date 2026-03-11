@@ -29,13 +29,13 @@ struct TextureAtlas {
     // TODO: Most likely very stupid, I dont care
     auto surface = IMG_Load(pathToAtlas);
 
-    auto convertedSurfac = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_ABGR8888);
+    auto convertedSurface = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_ABGR8888);
 
-    pixels = static_cast<Uint32 *>(convertedSurfac->pixels);
-    pitch = convertedSurfac->pitch;
+    pixels = static_cast<Uint32 *>(convertedSurface->pixels);
+    pitch = convertedSurface->pitch;
 
-    atlasWidth = convertedSurfac->w;
-    atlasHeight = convertedSurfac->h;
+    atlasWidth = convertedSurface->w;
+    atlasHeight = convertedSurface->h;
 
     tilesPerRow = atlasWidth / tileWidth;
     tilesPerColumn = atlasHeight / tileHeight;

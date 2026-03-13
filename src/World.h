@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Player.h"
-#include "PlayerController.h"
 #include "SDL3/SDL_render.h"
 #include "TextureAtlas.h"
 #include <memory>
@@ -12,7 +11,6 @@ constexpr int MAP_HEIGHT = 24;
 class World {
 
   Player player;
-  PlayerController playerController;
 
   std::unique_ptr<TextureAtlas> textureAtlas;
   // TODO: World should ABSOLUTELY NOT be owner of screenTexture, Window class?

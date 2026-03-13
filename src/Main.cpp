@@ -1,6 +1,8 @@
+#include "PlayerController.h"
 #include "Raycast.h"
 #include "SDL3/SDL_error.h"
 #include "SDL3/SDL_init.h"
+#include "SDL3/SDL_keyboard.h"
 #include "SDL3/SDL_log.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_timer.h"
@@ -19,14 +21,15 @@ class Engine {
   const char *TWO_DIMENSIONAL_VIEW_WINDOW_NAME = "RayStratocaster 2D View";
 
   double deltaTime;
-  Uint32 currentTime;
-  Uint32 oldTime;
+  Uint64 currentTime;
+  Uint64 oldTime;
 
   World world;
   bool done = false;
   bool render2D = false;
 
   RayStratocaster raycaster;
+  PlayerController playerController;
 
   SDL_Window *raycastWindow;
   SDL_Renderer *renderer;
@@ -54,6 +57,7 @@ public:
 
   void Tick() {
     updateTime();
+    playerController.handleInput(SDL_GetKeyboardState(nullptr), world);
     world.updateWorld(deltaTime);
     // TODO: should take deltatime directly from engine i think so pass it here
     raycaster.renderPlayerView(world, *renderer);

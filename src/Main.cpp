@@ -8,6 +8,7 @@
 #include "SDL3/SDL_timer.h"
 #include "SDL3/SDL_version.h"
 #include "SDL3/SDL_video.h"
+#include "ScreenRenderContext.h"
 #include "World.h"
 #include <SDL3/SDL_main.h>
 #include <cstring>
@@ -17,6 +18,9 @@
 
 class Engine {
 
+  const int DEFAULT_SCREEN_WIDTH = 1280;
+  const int DEFAULT_SCREEN_HEIGHT = 720;
+
   const char *RAYCAST_WINDOW_NAME = "RayStratocaster";
   const char *TWO_DIMENSIONAL_VIEW_WINDOW_NAME = "RayStratocaster 2D View";
 
@@ -24,15 +28,16 @@ class Engine {
   Uint64 currentTime;
   Uint64 oldTime;
 
-  World world;
   bool done = false;
   bool render2D = false;
 
+  World world;
   RayStratocaster raycaster;
   PlayerController playerController;
+  ScreenRenderContext renderContext = {DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT,
+                                  nullptr, nullptr};
 
   SDL_Window *raycastWindow;
-  SDL_Renderer *renderer;
 
   SDL_Window *twoDimensionalViewWindow;
   SDL_Renderer *twoDimensionalViewRenderer;
@@ -60,7 +65,7 @@ public:
     playerController.handleInput(SDL_GetKeyboardState(nullptr), world);
     world.updateWorld(deltaTime);
     // TODO: should take deltatime directly from engine i think so pass it here
-    raycaster.renderPlayerView(world, *renderer);
+    raycaster.renderPlayerView(world, renderContext);
     // TODO: Make this view overlay with the raycast view when pressing a button
     // i.e dont render in a seperate window
     if (render2D)
@@ -72,6 +77,9 @@ public:
 
     render2D = render2DArg;
 
+    renderContext.screenHeight = DEFAULT_SCREEN_HEIGHT;
+    renderContext.screenWidth = DEFAULT_SCREEN_WIDTH;
+
     if (!SDL_Init(SDL_INIT_VIDEO)) {
       throw std::runtime_error(SDL_GetError());
     }
@@ -79,34 +87,35 @@ public:
     SDL_Log("Initialized SDL: v%i", SDL_VERSION);
 
     // TODO: Better error handling
-    if (!SDL_CreateWindowAndRenderer(
-            RAYCAST_WINDOW_NAME, raycaster.SCREEN_WIDTH,
-            raycaster.SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE, &raycastWindow,
-            &renderer)) {
+    if (!SDL_CreateWindowAndRenderer(RAYCAST_WINDOW_NAME, renderContext.screenWidth,
+                                     renderContext.screenHeight, SDL_WINDOW_RESIZABLE,
+                                     &raycastWindow, &renderContext.renderer)) {
       throw std::runtime_error(SDL_GetError());
     } else {
 
-      SDL_SetRenderVSync(renderer, 1);
-      SDL_SetRenderLogicalPresentation(renderer, raycaster.SCREEN_WIDTH,
-                                       raycaster.SCREEN_HEIGHT,
+      SDL_SetRenderVSync(renderContext.renderer, 1);
+      SDL_SetRenderLogicalPresentation(renderContext.renderer, renderContext.screenWidth,
+                                       renderContext.screenHeight,
                                        SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
       SDL_Log("Set up window %s and its renderer", RAYCAST_WINDOW_NAME);
+
+      renderContext.initTexture();
     }
 
     // TODO: meh
     if (render2D) {
 
       if (!SDL_CreateWindowAndRenderer(
-              TWO_DIMENSIONAL_VIEW_WINDOW_NAME, raycaster.SCREEN_WIDTH,
-              raycaster.SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE,
+              TWO_DIMENSIONAL_VIEW_WINDOW_NAME, renderContext.screenWidth,
+              renderContext.screenHeight, SDL_WINDOW_RESIZABLE,
               &twoDimensionalViewWindow, &twoDimensionalViewRenderer)) {
         throw std::runtime_error(SDL_GetError());
       } else {
 
-        SDL_SetRenderLogicalPresentation(
-            twoDimensionalViewRenderer, raycaster.SCREEN_WIDTH,
-            raycaster.SCREEN_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        SDL_SetRenderLogicalPresentation(twoDimensionalViewRenderer,
+                                         renderContext.screenWidth, renderContext.screenHeight,
+                                         SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetRenderVSync(twoDimensionalViewRenderer, 1);
       }
 
@@ -116,8 +125,7 @@ public:
 
     SDL_Log("Initializing World...");
 
-    world.initializeWorld(renderer, raycaster.SCREEN_WIDTH,
-                          raycaster.SCREEN_HEIGHT);
+    world.initializeWorld();
 
     SDL_Log("Init complete!");
   }
@@ -126,7 +134,7 @@ public:
 
     // TODO: dunno if i should even do it this way
 
-    SDL_DestroyRenderer(renderer);
+    SDL_DestroyRenderer(renderContext.renderer);
     SDL_DestroyRenderer(twoDimensionalViewRenderer);
 
     SDL_DestroyWindow(raycastWindow);

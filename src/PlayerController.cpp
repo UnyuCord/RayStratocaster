@@ -2,6 +2,7 @@
 #include "SDL3/SDL_scancode.h"
 #include "World.h"
 
+// TODO: A controller for the player should be its own entity, in the future there might be multiple types of controllers
 void PlayerController::handleInput(const bool *keyboardState, World &world) const {
 
   // TODO: make it possible to rebind keys

@@ -2,28 +2,33 @@
 #include "SDL3/SDL_pixels.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_stdinc.h"
+#include "ScreenRenderContext.h"
 #include "World.h"
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <stdexcept>
 
 // TODO: Renderline function that accepts color
+#define COLOR_RESET_RCTX SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
 using namespace std;
 
-void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
+void RayStratocaster::renderPlayerView(
+    const World &world, const ScreenRenderContext &renderContext) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
   const auto &plane = world.getPlayer().plane;
   const auto &textureAtlas = world.getTextureAtlas();
-  auto &screenTexture = world.getScreenTexture();
+
+  const auto &screenTexture = renderContext.screenTexture;
+  const auto &renderer = renderContext.renderer;
 
   void *pixels;
   int pitch;
 
-  SDL_LockTexture(&screenTexture, nullptr, &pixels, &pitch);
+  SDL_LockTexture(screenTexture, nullptr, &pixels, &pitch);
 
   auto screenBuffer = static_cast<Uint32 *>(pixels);
   int screenPitch = pitch / sizeof(Uint32);
@@ -31,9 +36,9 @@ void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
   // TODO: Make this a slider adjustable option and also add a fog effect (maybe
   // even be able to change the color depending on map data)
   const auto MAX_VIEW_DISTANCE = 20.0;
-  const auto inverseScreenWidth = 1.0 / SCREEN_WIDTH;
+  const auto inverseScreenWidth = 1.0 / renderContext.screenWidth;
 
-  for (int x = 0; x < SCREEN_WIDTH; x++) {
+  for (int x = 0; x < renderContext.screenWidth; x++) {
 
     double cameraX = 2 * x * inverseScreenWidth - 1;
     Vector2D rayDirection = {direction.x + plane.x * cameraX,
@@ -42,11 +47,11 @@ void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
     auto mapX = static_cast<int>(position.x);
     auto mapY = static_cast<int>(position.y);
 
-    Vector2D inverseRayDirection = {1.0 / rayDirection.x, 1.0 / rayDirection.y}; 
-
+    Vector2D inverseRayDirection = {1.0 / rayDirection.x, 1.0 / rayDirection.y};
 
     Vector2D<double> sideDistance;
-    Vector2D deltaDistance = {abs(inverseRayDirection.x), abs(inverseRayDirection.y)};
+    Vector2D deltaDistance = {abs(inverseRayDirection.x),
+                              abs(inverseRayDirection.y)};
 
     double perpendicularWallDistance;
 
@@ -105,15 +110,15 @@ void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
     else
       perpendicularWallDistance = sideDistance.y - deltaDistance.y;
 
-    auto lineHeight =
-        static_cast<int>(SCREEN_HEIGHT / perpendicularWallDistance);
+    auto lineHeight = static_cast<int>(renderContext.screenHeight /
+                                       perpendicularWallDistance);
 
-    int drawStart = -lineHeight / 2 + SCREEN_HEIGHT / 2;
+    int drawStart = -lineHeight / 2 + renderContext.screenHeight / 2;
     if (drawStart < 0)
       drawStart = 0;
-    int drawEnd = lineHeight / 2 + SCREEN_HEIGHT / 2;
-    if (drawEnd >= SCREEN_HEIGHT)
-      drawEnd = SCREEN_HEIGHT - 1;
+    int drawEnd = lineHeight / 2 + renderContext.screenHeight / 2;
+    if (drawEnd >= renderContext.screenHeight)
+      drawEnd = renderContext.screenHeight - 1;
 
     int texIndex = world.MAP[mapX][mapY] - 1;
 
@@ -137,10 +142,11 @@ void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
       texX = textureAtlas.tileWidth - texX - 1;
 
     double step = 1.0 * textureAtlas.tileHeight / lineHeight;
-    double texPos =
-        (drawStart - (double)SCREEN_HEIGHT / 2 + (double)lineHeight / 2) * step;
+    double texPos = (drawStart - (double)renderContext.screenHeight / 2 +
+                     (double)lineHeight / 2) *
+                    step;
 
-    Uint32* column = screenBuffer + x;
+    Uint32 *column = screenBuffer + x;
 
     for (int y = drawStart; y < drawEnd; y++) {
       int texY = (int)texPos & (textureAtlas.tileHeight - 1);
@@ -159,31 +165,33 @@ void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
     }
   }
 
-  SDL_UnlockTexture(&screenTexture);
-  SDL_RenderTexture(&renderer, &screenTexture, nullptr, nullptr);
+  SDL_UnlockTexture(screenTexture);
+  SDL_RenderTexture(renderer, screenTexture, nullptr, nullptr);
 
-  SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
-  if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+  if (!SDL_RenderDebugTextFormat(renderer, 50, 50, "FPS: %.2f",
                                  1.0 / world.getDeltaTime())) {
     throw runtime_error(SDL_GetError());
   }
 
-  SDL_RenderDebugTextFormat(&renderer, 50, 60, "Player POS: x:%.2f y:%.2f",
+  SDL_RenderDebugTextFormat(renderer, 50, 60, "Player POS: x:%.2f y:%.2f",
                             position.x, position.y);
-  SDL_RenderDebugTextFormat(&renderer, 50, 70, "Player DIR: x:%.2f y:%.2f",
+  SDL_RenderDebugTextFormat(renderer, 50, 70, "Player DIR: x:%.2f y:%.2f",
                             direction.x, direction.y);
-  SDL_RenderDebugTextFormat(&renderer, 50, 80, "Player PLN: x:%.2f y:%.2f",
+  SDL_RenderDebugTextFormat(renderer, 50, 80, "Player PLN: x:%.2f y:%.2f",
                             plane.x, plane.y);
 
-  COLOR_RESET
+  COLOR_RESET_RCTX
 
-  SDL_RenderPresent(&renderer);
-  SDL_RenderClear(&renderer);
+  for (int z = 0; z < renderContext.screenWidth * renderContext.screenHeight;
+       z++) {
+    screenBuffer[z] = 0;
+  }
+  SDL_RenderPresent(renderer);
+  SDL_RenderClear(renderer);
 };
 
-// TODO: Need to refactor this badly, but it does work at least, if a little
-// skewed at certain values...
-// ALSO seemingly inverted??
+// TODO: This is shit
 void RayStratocaster::renderTwoDimensionalView(const World &world,
                                                SDL_Renderer &renderer) {
 
@@ -194,8 +202,8 @@ void RayStratocaster::renderTwoDimensionalView(const World &world,
   SDL_FRect rects[MAP_WIDTH][MAP_HEIGHT];
   SDL_FRect playerRect;
 
-  auto squareWidthScaledToResolution = float(SCREEN_WIDTH) / MAP_WIDTH;
-  auto squareHeightScaledToResolution = float(SCREEN_HEIGHT) / MAP_HEIGHT;
+  auto squareWidthScaledToResolution = 1280.0F / MAP_WIDTH;
+  auto squareHeightScaledToResolution = 720.0F / MAP_HEIGHT;
 
   playerRect.h = 10;
   playerRect.w = 10;

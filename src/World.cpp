@@ -1,6 +1,4 @@
 #include "World.h"
-#include "SDL3/SDL_pixels.h"
-#include "SDL3/SDL_render.h"
 #include "TextureAtlas.h"
 #include "TextureAtlasLoader.h"
 #include <memory>
@@ -12,17 +10,10 @@ const Player &World::getPlayer() const { return player; }
 
 const TextureAtlas &World::getTextureAtlas() const { return *textureAtlas; }
 
-SDL_Texture &World::getScreenTexture() { return *screenTexture; }
-
-void World::initializeWorld(SDL_Renderer *renderer, const int screenWidth,
-                            const int screenHeight) {
+void World::initializeWorld() {
 
   textureAtlas =
       TextureAtlasLoader::loadAtlasFromFile("resources/textures/tex.png");
-
-  screenTexture =
-      SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-                        SDL_TEXTUREACCESS_STREAMING, screenWidth, screenHeight);
 }
 
 void World::updateWorld(const double engineDeltaTime) {

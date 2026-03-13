@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <stdexcept>
+#include <vector>
 
 // TODO: Renderline function that accepts color
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
@@ -13,18 +14,18 @@
 using namespace std;
 
 void RayStratocaster::renderPlayerView(const World &world,
-                                       SDL_Renderer &renderer,
-                                       SDL_Texture &texture) {
+                                       SDL_Renderer &renderer) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
   const auto &plane = world.getPlayer().plane;
-  const auto &textureAtlas = world.textureAtlas;
+  const auto &textureAtlas = world.getTextureAtlas();
 
-  // TODO: Make this a slider adjustable option
+  // TODO: Make this a slider adjustable option and also add a fog effect (maybe
+  // even be able to change the color depending on map data)
   const auto MAX_VIEW_DISTANCE = 20.0;
 
-  Uint32 screenBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+  std::vector<Uint32> screenBuffer(SCREEN_WIDTH * SCREEN_HEIGHT);
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
 
@@ -138,7 +139,7 @@ void RayStratocaster::renderPlayerView(const World &world,
       int atlasY = textureAtlas.tileHeight * tileY + texY;
 
       Uint32 color =
-          textureAtlas.pixels[(atlasY * textureAtlas.pitch / 4) + atlasX];
+          textureAtlas.pixels[(atlasY * textureAtlas.atlasWidth) + atlasX];
 
       if (side == 1)
         color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
@@ -147,9 +148,9 @@ void RayStratocaster::renderPlayerView(const World &world,
     }
   }
 
-  SDL_UpdateTexture(&texture, nullptr, screenBuffer,
+  SDL_UpdateTexture(textureAtlas.texture, nullptr, screenBuffer.data(),
                     SCREEN_WIDTH * sizeof(Uint32));
-  SDL_RenderTexture(&renderer, &texture, nullptr, nullptr);
+  SDL_RenderTexture(&renderer, textureAtlas.texture, nullptr, nullptr);
 
   SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",
@@ -165,10 +166,6 @@ void RayStratocaster::renderPlayerView(const World &world,
                             plane.x, plane.y);
 
   COLOR_RESET
-
-  // TODO: Remove this once floor and ceiling rendering works
-  for (int z = 0; z < SCREEN_HEIGHT * SCREEN_WIDTH; z++)
-    screenBuffer[z] = 0;
 
   SDL_RenderPresent(&renderer);
   SDL_RenderClear(&renderer);

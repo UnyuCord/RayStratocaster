@@ -2,7 +2,9 @@
 
 #include "Player.h"
 #include "PlayerController.h"
+#include "SDL3/SDL_render.h"
 #include "TextureAtlas.h"
+#include <memory>
 
 constexpr int MAP_WIDTH = 24;
 constexpr int MAP_HEIGHT = 24;
@@ -12,18 +14,21 @@ class World {
   Player player;
   PlayerController playerController;
 
+  std::unique_ptr<TextureAtlas> textureAtlas;
+
   double deltaTime;
 
 public:
+  const TextureAtlas &getTextureAtlas() const;
   double getDeltaTime() const;
   Player &getPlayer();
   const Player &getPlayer() const;
   void updateWorld(double deltaTime);
+  void initializeWorld(SDL_Renderer *renderer, const int screenHeight,
+                       const int screenWidth);
 
-  const TextureAtlas textureAtlas = {"resources/textures/tex.png", 128, 128};
-
-  // TODO: It is EXTREMELY stupid to hard code the map size to 24, but right now
-  // I cant be bothered to make it better, ill regret this later...
+  // TODO: It is EXTREMELY stupid to hard code the map size to 24, but right
+  // now I cant be bothered to make it better, ill regret this later...
   const int MAP[MAP_WIDTH][MAP_HEIGHT] = {
       {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -43,7 +48,7 @@ public:
       {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
       {1, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
       {1, 4, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-      {1, 4, 0, 0, 0, 0, 5, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+      {1, 4, 0, 0, 0, 0, 19, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
       {1, 4, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
       {1, 4, 0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
       {1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},

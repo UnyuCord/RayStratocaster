@@ -19,8 +19,8 @@ class Engine {
   const char *TWO_DIMENSIONAL_VIEW_WINDOW_NAME = "RayStratocaster 2D View";
 
   double deltaTime;
-  Uint64 currentTime;
-  Uint64 oldTime;
+  Uint32 currentTime;
+  Uint32 oldTime;
 
   World world;
   bool done = false;
@@ -30,7 +30,6 @@ class Engine {
 
   SDL_Window *raycastWindow;
   SDL_Renderer *renderer;
-  SDL_Texture *texture;
 
   SDL_Window *twoDimensionalViewWindow;
   SDL_Renderer *twoDimensionalViewRenderer;
@@ -57,7 +56,7 @@ public:
     updateTime();
     world.updateWorld(deltaTime);
     // TODO: should take deltatime directly from engine i think so pass it here
-    raycaster.renderPlayerView(world, *renderer, *texture);
+    raycaster.renderPlayerView(world, *renderer);
     // TODO: Make this view overlay with the raycast view when pressing a button
     // i.e dont render in a seperate window
     if (render2D)
@@ -111,10 +110,8 @@ public:
               TWO_DIMENSIONAL_VIEW_WINDOW_NAME);
     }
 
-    SDL_Log("Creating texture...");
-    texture = SDL_CreateTexture(
-        renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-        raycaster.SCREEN_WIDTH, raycaster.SCREEN_HEIGHT);
+    world.initializeWorld(renderer, raycaster.SCREEN_WIDTH,
+                          raycaster.SCREEN_HEIGHT);
 
     SDL_Log("Init complete!");
   }

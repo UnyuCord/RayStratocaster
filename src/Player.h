@@ -25,6 +25,7 @@ struct Player {
   void moveDown(const World &world);
   void moveRight(const World &world);
   void moveLeft(const World &world);
+  void resetPosition();
 
   Player() = default;
   explicit Player(Vector2D<double> position) : position(position) {};

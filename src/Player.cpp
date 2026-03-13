@@ -49,3 +49,7 @@ void Player::moveLeft(const World &world) {
   plane.y = oldPlaneX * sin(currentTurnSpeed * world.getDeltaTime()) +
             plane.y * cos(currentTurnSpeed * world.getDeltaTime());
 }
+
+void Player::resetPosition() {
+  position = {22, 12};
+}

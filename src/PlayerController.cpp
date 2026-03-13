@@ -23,4 +23,9 @@ void PlayerController::handleInput(const bool *keyboardState, World &world) cons
   if (keyboardState[SDL_SCANCODE_RIGHT]) {
     player.moveRight(world);
   }
+
+  if (keyboardState[SDL_SCANCODE_F1]) {
+    player.resetPosition();
+  }
+  
 }

@@ -2,23 +2,28 @@
 #include "World.h"
 #include <cmath>
 
-// TODO: Player likes to get stuck on edges, probably because of world map being an int while actual position being double
+// TODO: Player likes to get stuck on edges, probably because of collision check
+// working on an int basis while actual position being double
 
 void Player::moveUp(const World &world) {
-  if (world.MAP[int(position.x + direction.x * (currentMoveSpeed * world.getDeltaTime()))]
+  if (world.MAP[int(position.x +
+                    direction.x * (currentMoveSpeed * world.getDeltaTime()))]
                [int(position.y)] == false)
     position.x += direction.x * (currentMoveSpeed * world.getDeltaTime());
   if (world.MAP[int(position.x)]
-               [int(position.y + direction.y * currentMoveSpeed * world.getDeltaTime())] == false)
+               [int(position.y + direction.y * currentMoveSpeed *
+                                     world.getDeltaTime())] == false)
     position.y += direction.y * (currentMoveSpeed * world.getDeltaTime());
 }
 
 void Player::moveDown(const World &world) {
-  if (world.MAP[int(position.x + direction.x * currentMoveSpeed * world.getDeltaTime())]
-               [int(position.y)] == false)
+  if (world.MAP[int(position.x + direction.x * currentMoveSpeed *
+                                     world.getDeltaTime())][int(position.y)] ==
+      false)
     position.x -= direction.x * (currentMoveSpeed * world.getDeltaTime());
   if (world.MAP[int(position.x)]
-               [int(position.y + direction.y * currentMoveSpeed * world.getDeltaTime())] == false)
+               [int(position.y + direction.y * currentMoveSpeed *
+                                     world.getDeltaTime())] == false)
     position.y -= direction.y * (currentMoveSpeed * world.getDeltaTime());
 }
 
@@ -50,6 +55,4 @@ void Player::moveLeft(const World &world) {
             plane.y * cos(currentTurnSpeed * world.getDeltaTime());
 }
 
-void Player::resetPosition() {
-  position = {22, 12};
-}
+void Player::resetPosition() { position = {22, 12}; }

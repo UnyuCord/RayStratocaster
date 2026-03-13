@@ -15,17 +15,20 @@ class World {
   PlayerController playerController;
 
   std::unique_ptr<TextureAtlas> textureAtlas;
+  // TODO: World should ABSOLUTELY NOT be owner of screenTexture, Window class?
+  SDL_Texture *screenTexture;
 
   double deltaTime;
 
 public:
   const TextureAtlas &getTextureAtlas() const;
+  SDL_Texture &getScreenTexture();
   double getDeltaTime() const;
   Player &getPlayer();
   const Player &getPlayer() const;
   void updateWorld(double deltaTime);
-  void initializeWorld(SDL_Renderer *renderer, const int screenHeight,
-                       const int screenWidth);
+  void initializeWorld(SDL_Renderer *renderer, const int screenWidth,
+                       const int screenHeight);
 
   // TODO: It is EXTREMELY stupid to hard code the map size to 24, but right
   // now I cant be bothered to make it better, ill regret this later...

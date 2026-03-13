@@ -110,6 +110,8 @@ public:
               TWO_DIMENSIONAL_VIEW_WINDOW_NAME);
     }
 
+    SDL_Log("Initializing World...");
+
     world.initializeWorld(renderer, raycaster.SCREEN_WIDTH,
                           raycaster.SCREEN_HEIGHT);
 

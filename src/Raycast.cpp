@@ -6,26 +6,32 @@
 #include <SDL3/SDL.h>
 #include <cmath>
 #include <stdexcept>
-#include <vector>
 
 // TODO: Renderline function that accepts color
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
 using namespace std;
 
-void RayStratocaster::renderPlayerView(const World &world,
+void RayStratocaster::renderPlayerView(World &world,
                                        SDL_Renderer &renderer) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
   const auto &plane = world.getPlayer().plane;
   const auto &textureAtlas = world.getTextureAtlas();
+  auto &screenTexture = world.getScreenTexture();
+
+  void* pixels;
+  int pitch;
+
+  SDL_LockTexture(&screenTexture, nullptr, &pixels, &pitch);
+
+  auto screenBuffer = static_cast<Uint32*>(pixels);
+  int screenPitch = pitch / sizeof(Uint32);
 
   // TODO: Make this a slider adjustable option and also add a fog effect (maybe
   // even be able to change the color depending on map data)
   const auto MAX_VIEW_DISTANCE = 20.0;
-
-  std::vector<Uint32> screenBuffer(SCREEN_WIDTH * SCREEN_HEIGHT);
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
 
@@ -144,13 +150,12 @@ void RayStratocaster::renderPlayerView(const World &world,
       if (side == 1)
         color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
 
-      screenBuffer[y * SCREEN_WIDTH + x] = color;
+      screenBuffer[y * screenPitch + x] = color;
     }
   }
 
-  SDL_UpdateTexture(textureAtlas.texture, nullptr, screenBuffer.data(),
-                    SCREEN_WIDTH * sizeof(Uint32));
-  SDL_RenderTexture(&renderer, textureAtlas.texture, nullptr, nullptr);
+  SDL_UnlockTexture(&screenTexture);
+  SDL_RenderTexture(&renderer, &screenTexture, nullptr, nullptr);
 
   SDL_SetRenderDrawColor(&renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(&renderer, 50, 50, "FPS: %.2f",

@@ -12,8 +12,7 @@
 
 using namespace std;
 
-void RayStratocaster::renderPlayerView(World &world,
-                                       SDL_Renderer &renderer) {
+void RayStratocaster::renderPlayerView(World &world, SDL_Renderer &renderer) {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
@@ -21,29 +20,33 @@ void RayStratocaster::renderPlayerView(World &world,
   const auto &textureAtlas = world.getTextureAtlas();
   auto &screenTexture = world.getScreenTexture();
 
-  void* pixels;
+  void *pixels;
   int pitch;
 
   SDL_LockTexture(&screenTexture, nullptr, &pixels, &pitch);
 
-  auto screenBuffer = static_cast<Uint32*>(pixels);
+  auto screenBuffer = static_cast<Uint32 *>(pixels);
   int screenPitch = pitch / sizeof(Uint32);
 
   // TODO: Make this a slider adjustable option and also add a fog effect (maybe
   // even be able to change the color depending on map data)
   const auto MAX_VIEW_DISTANCE = 20.0;
+  const auto inverseScreenWidth = 1.0 / SCREEN_WIDTH;
 
   for (int x = 0; x < SCREEN_WIDTH; x++) {
 
-    double cameraX = 2 * x / double(SCREEN_WIDTH) - 1;
+    double cameraX = 2 * x * inverseScreenWidth - 1;
     Vector2D rayDirection = {direction.x + plane.x * cameraX,
                              direction.y + plane.y * cameraX};
 
     auto mapX = static_cast<int>(position.x);
     auto mapY = static_cast<int>(position.y);
 
+    Vector2D inverseRayDirection = {1.0 / rayDirection.x, 1.0 / rayDirection.y}; 
+
+
     Vector2D<double> sideDistance;
-    Vector2D deltaDistance = {abs(1 / rayDirection.x), abs(1 / rayDirection.y)};
+    Vector2D deltaDistance = {abs(inverseRayDirection.x), abs(inverseRayDirection.y)};
 
     double perpendicularWallDistance;
 
@@ -137,6 +140,8 @@ void RayStratocaster::renderPlayerView(World &world,
     double texPos =
         (drawStart - (double)SCREEN_HEIGHT / 2 + (double)lineHeight / 2) * step;
 
+    Uint32* column = screenBuffer + x;
+
     for (int y = drawStart; y < drawEnd; y++) {
       int texY = (int)texPos & (textureAtlas.tileHeight - 1);
       texPos += step;
@@ -150,7 +155,7 @@ void RayStratocaster::renderPlayerView(World &world,
       if (side == 1)
         color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
 
-      screenBuffer[y * screenPitch + x] = color;
+      column[y * screenPitch] = color;
     }
   }
 

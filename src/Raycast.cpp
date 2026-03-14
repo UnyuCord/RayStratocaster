@@ -1,4 +1,5 @@
 #include "Raycast.h"
+#include "Player.h"
 #include "SDL3/SDL_pixels.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_stdinc.h"
@@ -13,6 +14,44 @@
 #define COLOR_RESET SDL_SetRenderDrawColor(&renderer, 0, 0, 0, 0);
 
 using namespace std;
+
+namespace {
+
+Ray setupRay(const Player &player, const int screenWidth, const int x) {
+
+  Ray ray;
+
+  ray.cameraX = 2 * x / (double)screenWidth - 1;
+  ray.direction = {player.direction.x + player.plane.x * ray.cameraX,
+                   player.direction.y + player.plane.y * ray.cameraX};
+
+  ray.mapX = static_cast<int>(player.position.x);
+  ray.mapY = static_cast<int>(player.position.y);
+
+  Vector2D inverseRayDirection = {1.0 / ray.direction.x, 1.0 / ray.direction.y};
+
+  ray.deltaDistance = {abs(inverseRayDirection.x), abs(inverseRayDirection.y)};
+
+  if (ray.direction.x < 0) {
+    ray.stepX = -1;
+    ray.sideDistance.x = (player.position.x - ray.mapX) * ray.deltaDistance.x;
+  } else {
+    ray.stepX = 1;
+    ray.sideDistance.x = (ray.mapX + 1.0 - player.position.x) * ray.deltaDistance.x;
+  }
+
+  if (ray.direction.y < 0) {
+    ray.stepY = -1;
+    ray.sideDistance.y = (player.position.y - ray.mapY) * ray.deltaDistance.y;
+  } else {
+    ray.stepY = 1;
+    ray.sideDistance.y = (ray.mapY + 1.0 - player.position.y) * ray.deltaDistance.y;
+  }
+
+  return ray;
+}
+
+} // namespace
 
 void RayStratocaster::renderPlayerView(
     const World &world, const ScreenRenderContext &renderContext) {
@@ -33,72 +72,36 @@ void RayStratocaster::renderPlayerView(
   auto screenBuffer = static_cast<Uint32 *>(pixels);
   int screenPitch = pitch / sizeof(Uint32);
 
-  // TODO: Make this a slider adjustable option and also add a fog effect (maybe
-  // even be able to change the color depending on map data)
-  const auto MAX_VIEW_DISTANCE = 20.0;
-  const auto inverseScreenWidth = 1.0 / renderContext.screenWidth;
-
   for (int x = 0; x < renderContext.screenWidth; x++) {
 
-    double cameraX = 2 * x * inverseScreenWidth - 1;
-    Vector2D rayDirection = {direction.x + plane.x * cameraX,
-                             direction.y + plane.y * cameraX};
-
-    auto mapX = static_cast<int>(position.x);
-    auto mapY = static_cast<int>(position.y);
-
-    Vector2D inverseRayDirection = {1.0 / rayDirection.x, 1.0 / rayDirection.y};
-
-    Vector2D<double> sideDistance;
-    Vector2D deltaDistance = {abs(inverseRayDirection.x),
-                              abs(inverseRayDirection.y)};
+    auto ray = setupRay(world.getPlayer(), renderContext.screenWidth, x);
 
     double perpendicularWallDistance;
-
-    int stepX;
-    int stepY;
-
     auto rayHasHitWall = false;
     int side;
 
-    if (rayDirection.x < 0) {
-      stepX = -1;
-      sideDistance.x = (position.x - mapX) * deltaDistance.x;
-    } else {
-      stepX = 1;
-      sideDistance.x = (mapX + 1.0 - position.x) * deltaDistance.x;
-    }
-
-    if (rayDirection.y < 0) {
-      stepY = -1;
-      sideDistance.y = (position.y - mapY) * deltaDistance.y;
-    } else {
-      stepY = 1;
-      sideDistance.y = (mapY + 1.0 - position.y) * deltaDistance.y;
-    }
-
     while (!rayHasHitWall) {
 
-      if (sideDistance.x < sideDistance.y) {
-        sideDistance.x += deltaDistance.x;
-        mapX += stepX;
+      if (ray.sideDistance.x < ray.sideDistance.y) {
+        ray.sideDistance.x += ray.deltaDistance.x;
+        ray.mapX += ray.stepX;
         side = 0;
       } else {
-        sideDistance.y += deltaDistance.y;
-        mapY += stepY;
+        ray.sideDistance.y += ray.deltaDistance.y;
+        ray.mapY += ray.stepY;
         side = 1;
       }
 
       if (double currentDistance = (side == 0)
-                                       ? sideDistance.x - deltaDistance.x
-                                       : sideDistance.y - deltaDistance.y;
+                                       ? ray.sideDistance.x - ray.deltaDistance.x
+                                       : ray.sideDistance.y - ray.deltaDistance.y;
           currentDistance > MAX_VIEW_DISTANCE)
         break;
 
-      if (mapX < 0 || mapY < 0 || mapX >= MAP_WIDTH || mapY >= MAP_HEIGHT)
+      if (ray.mapX < 0 || ray.mapY < 0 || ray.mapX >= MAP_WIDTH || ray.mapY >= MAP_HEIGHT)
         break;
 
-      if (world.MAP[mapX][mapY] > 0)
+      if (world.MAP[ray.mapX][ray.mapY] > 0)
         rayHasHitWall = true;
     }
 
@@ -106,9 +109,9 @@ void RayStratocaster::renderPlayerView(
       continue;
 
     if (side == 0)
-      perpendicularWallDistance = sideDistance.x - deltaDistance.x;
+      perpendicularWallDistance = ray.sideDistance.x - ray.deltaDistance.x;
     else
-      perpendicularWallDistance = sideDistance.y - deltaDistance.y;
+      perpendicularWallDistance = ray.sideDistance.y - ray.deltaDistance.y;
 
     auto lineHeight = static_cast<int>(renderContext.screenHeight /
                                        perpendicularWallDistance);
@@ -120,7 +123,7 @@ void RayStratocaster::renderPlayerView(
     if (drawEnd >= renderContext.screenHeight)
       drawEnd = renderContext.screenHeight - 1;
 
-    int texIndex = world.MAP[mapX][mapY] - 1;
+    int texIndex = world.MAP[ray.mapX][ray.mapY] - 1;
 
     int tileX = texIndex % textureAtlas.tilesPerRow;
     int tileY = texIndex / textureAtlas.tilesPerRow;
@@ -128,17 +131,17 @@ void RayStratocaster::renderPlayerView(
     double wallX;
 
     if (!side) {
-      wallX = position.y + perpendicularWallDistance * rayDirection.y;
+      wallX = position.y + perpendicularWallDistance * ray.direction.y;
     } else {
-      wallX = position.x + perpendicularWallDistance * rayDirection.x;
+      wallX = position.x + perpendicularWallDistance * ray.direction.x;
     }
     wallX -= floor(wallX);
 
     auto texX = int(wallX * double(textureAtlas.tileWidth));
 
-    if (side == 0 && rayDirection.x > 0)
+    if (side == 0 && ray.direction.x > 0)
       texX = textureAtlas.tileWidth - texX - 1;
-    if (side == 1 && rayDirection.y < 0)
+    if (side == 1 && ray.direction.y < 0)
       texX = textureAtlas.tileWidth - texX - 1;
 
     double step = 1.0 * textureAtlas.tileHeight / lineHeight;

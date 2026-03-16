@@ -8,12 +8,12 @@
 // Shadow bonnie
 class RayStratocaster {
 
-  const int MAX_VIEW_DISTANCE = 20;
+  const int MAX_VIEW_DISTANCE_IN_MAP_TILES = 20;
 
 public:
 
-  void renderPlayerView(const World &world, const ScreenRenderContext &renderContext);
-  void renderTwoDimensionalView(const World &world, SDL_Renderer &renderer);
+  void renderPlayerView(const World &world, const ScreenRenderContext &renderContext) const;
+  void renderTwoDimensionalView(const World &world, SDL_Renderer &renderer) const;
   RayStratocaster() = default;
 };
 

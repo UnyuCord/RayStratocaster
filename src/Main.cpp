@@ -24,6 +24,8 @@ class Engine {
   const char *RAYCAST_WINDOW_NAME = "RayStratocaster";
   const char *TWO_DIMENSIONAL_VIEW_WINDOW_NAME = "RayStratocaster 2D View";
 
+  const bool *keyboardState = SDL_GetKeyboardState(nullptr);
+
   double deltaTime;
   Uint64 currentTime;
   Uint64 oldTime;
@@ -34,8 +36,8 @@ class Engine {
   World world;
   RayStratocaster raycaster;
   PlayerController playerController;
-  ScreenRenderContext renderContext = {DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT,
-                                  nullptr, nullptr};
+  ScreenRenderContext renderContext = {DEFAULT_SCREEN_WIDTH,
+                                       DEFAULT_SCREEN_HEIGHT, nullptr, nullptr};
 
   SDL_Window *raycastWindow;
 
@@ -62,7 +64,7 @@ public:
 
   void Tick() {
     updateTime();
-    playerController.handleInput(SDL_GetKeyboardState(nullptr), world);
+    playerController.handleInput(keyboardState, world);
     world.updateWorld(deltaTime);
     // TODO: should take deltatime directly from engine i think so pass it here
     raycaster.renderPlayerView(world, renderContext);
@@ -87,16 +89,17 @@ public:
     SDL_Log("Initialized SDL: v%i", SDL_VERSION);
 
     // TODO: Better error handling
-    if (!SDL_CreateWindowAndRenderer(RAYCAST_WINDOW_NAME, renderContext.screenWidth,
-                                     renderContext.screenHeight, SDL_WINDOW_RESIZABLE,
-                                     &raycastWindow, &renderContext.renderer)) {
+    if (!SDL_CreateWindowAndRenderer(
+            RAYCAST_WINDOW_NAME, renderContext.screenWidth,
+            renderContext.screenHeight, SDL_WINDOW_RESIZABLE, &raycastWindow,
+            &renderContext.renderer)) {
       throw std::runtime_error(SDL_GetError());
     } else {
 
       SDL_SetRenderVSync(renderContext.renderer, 1);
-      SDL_SetRenderLogicalPresentation(renderContext.renderer, renderContext.screenWidth,
-                                       renderContext.screenHeight,
-                                       SDL_LOGICAL_PRESENTATION_LETTERBOX);
+      SDL_SetRenderLogicalPresentation(
+          renderContext.renderer, renderContext.screenWidth,
+          renderContext.screenHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
       SDL_Log("Set up window %s and its renderer", RAYCAST_WINDOW_NAME);
 
@@ -113,9 +116,9 @@ public:
         throw std::runtime_error(SDL_GetError());
       } else {
 
-        SDL_SetRenderLogicalPresentation(twoDimensionalViewRenderer,
-                                         renderContext.screenWidth, renderContext.screenHeight,
-                                         SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        SDL_SetRenderLogicalPresentation(
+            twoDimensionalViewRenderer, renderContext.screenWidth,
+            renderContext.screenHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetRenderVSync(twoDimensionalViewRenderer, 1);
       }
 

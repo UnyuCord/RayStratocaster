@@ -37,7 +37,8 @@ Ray setupRay(const Player &player, const int screenWidth, const int x) {
     ray.sideDistance.x = (player.position.x - ray.mapX) * ray.deltaDistance.x;
   } else {
     ray.stepX = 1;
-    ray.sideDistance.x = (ray.mapX + 1.0 - player.position.x) * ray.deltaDistance.x;
+    ray.sideDistance.x =
+        (ray.mapX + 1.0 - player.position.x) * ray.deltaDistance.x;
   }
 
   if (ray.direction.y < 0) {
@@ -45,7 +46,8 @@ Ray setupRay(const Player &player, const int screenWidth, const int x) {
     ray.sideDistance.y = (player.position.y - ray.mapY) * ray.deltaDistance.y;
   } else {
     ray.stepY = 1;
-    ray.sideDistance.y = (ray.mapY + 1.0 - player.position.y) * ray.deltaDistance.y;
+    ray.sideDistance.y =
+        (ray.mapY + 1.0 - player.position.y) * ray.deltaDistance.y;
   }
 
   return ray;
@@ -54,7 +56,7 @@ Ray setupRay(const Player &player, const int screenWidth, const int x) {
 } // namespace
 
 void RayStratocaster::renderPlayerView(
-    const World &world, const ScreenRenderContext &renderContext) {
+    const World &world, const ScreenRenderContext &renderContext) const {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;
@@ -92,13 +94,11 @@ void RayStratocaster::renderPlayerView(
         side = 1;
       }
 
-      if (double currentDistance = (side == 0)
-                                       ? ray.sideDistance.x - ray.deltaDistance.x
-                                       : ray.sideDistance.y - ray.deltaDistance.y;
-          currentDistance > MAX_VIEW_DISTANCE)
-        break;
-
-      if (ray.mapX < 0 || ray.mapY < 0 || ray.mapX >= MAP_WIDTH || ray.mapY >= MAP_HEIGHT)
+      if (auto currentDistance = (side == 0)
+                                     ? ray.sideDistance.x - ray.deltaDistance.x
+                                     : ray.sideDistance.y - ray.deltaDistance.y;
+          currentDistance > MAX_VIEW_DISTANCE_IN_MAP_TILES || ray.mapX < 0 || ray.mapY < 0 ||
+          ray.mapX >= MAP_WIDTH || ray.mapY >= MAP_HEIGHT)
         break;
 
       if (world.MAP[ray.mapX][ray.mapY] > 0)
@@ -149,22 +149,23 @@ void RayStratocaster::renderPlayerView(
                      (double)lineHeight / 2) *
                     step;
 
-    Uint32 *column = screenBuffer + x;
+    auto *screenBufferColumn = screenBuffer + x;
+    auto textureOffset =
+        tileY * textureAtlas.tileHeight * textureAtlas.atlasWidth +
+        tileX * textureAtlas.tileWidth + texX;
+    auto const *textureColumn = &textureAtlas.pixels[textureOffset];
+    auto shouldShade = (side == 1);
 
     for (int y = drawStart; y < drawEnd; y++) {
       int texY = (int)texPos & (textureAtlas.tileHeight - 1);
       texPos += step;
 
-      int atlasX = textureAtlas.tileWidth * tileX + texX;
-      int atlasY = textureAtlas.tileHeight * tileY + texY;
+      auto color = textureColumn[texY * textureAtlas.atlasWidth];
 
-      Uint32 color =
-          textureAtlas.pixels[(atlasY * textureAtlas.atlasWidth) + atlasX];
-
-      if (side == 1)
+      if (shouldShade)
         color = ((color & 0xFF000000) | (color & 0x00FEFEFE) >> 1);
 
-      column[y * screenPitch] = color;
+      screenBufferColumn[y * screenPitch] = color;
     }
   }
 
@@ -196,7 +197,7 @@ void RayStratocaster::renderPlayerView(
 
 // TODO: This is shit
 void RayStratocaster::renderTwoDimensionalView(const World &world,
-                                               SDL_Renderer &renderer) {
+                                               SDL_Renderer &renderer) const {
 
   const auto &position = world.getPlayer().position;
   const auto &direction = world.getPlayer().direction;

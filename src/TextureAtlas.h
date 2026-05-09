@@ -3,7 +3,7 @@
 #include "SDL3/SDL_stdinc.h"
 struct TextureAtlas {
 
-  const int DEFAULT_UNIFORM_TILE_DIMENSIONS = 128;
+  const int DEFAULT_UNIFORM_TILE_DIMENSIONS = 64;
 
   int atlasWidth;
   int atlasHeight;

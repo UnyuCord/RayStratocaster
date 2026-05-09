@@ -13,7 +13,7 @@ const TextureAtlas &World::getTextureAtlas() const { return *textureAtlas; }
 void World::initializeWorld() {
 
   textureAtlas =
-      TextureAtlasLoader::loadAtlasFromFile("../resources/textures/tex.png");
+      TextureAtlasLoader::loadAtlasFromFile("../resources/textures/default.png");
 }
 
 void World::updateWorld(const double engineDeltaTime) {

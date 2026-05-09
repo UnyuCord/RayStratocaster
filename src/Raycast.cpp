@@ -70,9 +70,14 @@ void RayStratocaster::renderPlayerView(
   int pitch;
 
   SDL_LockTexture(screenTexture, nullptr, &pixels, &pitch);
-
+  
   auto screenBuffer = static_cast<Uint32 *>(pixels);
   int screenPitch = pitch / sizeof(Uint32);
+
+  for (int z = 0; z < renderContext.screenWidth * renderContext.screenHeight;
+       z++) {
+    screenBuffer[z] = 0;
+  }
 
   for (int x = 0; x < renderContext.screenWidth; x++) {
 
@@ -171,7 +176,7 @@ void RayStratocaster::renderPlayerView(
 
   SDL_UnlockTexture(screenTexture);
   SDL_RenderTexture(renderer, screenTexture, nullptr, nullptr);
-
+  
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
   if (!SDL_RenderDebugTextFormat(renderer, 50, 50, "FPS: %.2f",
                                  1.0 / world.getDeltaTime())) {
@@ -187,10 +192,6 @@ void RayStratocaster::renderPlayerView(
 
   COLOR_RESET_RCTX
 
-  for (int z = 0; z < renderContext.screenWidth * renderContext.screenHeight;
-       z++) {
-    screenBuffer[z] = 0;
-  }
   SDL_RenderPresent(renderer);
   SDL_RenderClear(renderer);
 };
